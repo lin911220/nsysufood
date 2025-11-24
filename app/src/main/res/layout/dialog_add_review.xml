@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="撰寫評論"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp"/>
+
+    <RatingBar
+        android:id="@+id/rbDialogRating"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:numStars="5"
+        android:stepSize="1.0"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="16dp"/>
+
+    <EditText
+        android:id="@+id/etDialogComment"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="分享你的用餐體驗..."
+        android:inputType="textMultiLine|text"
+        android:minLines="3"
+        android:gravity="top"
+        android:background="@android:drawable/edit_text"
+        android:padding="8dp"/>
+</LinearLayout>

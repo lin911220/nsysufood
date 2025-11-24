@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "561489864375",
+    "firebase_url": "https://monkey-see-monkey-eat-44d8e-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "monkey-see-monkey-eat-44d8e",
+    "storage_bucket": "monkey-see-monkey-eat-44d8e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:561489864375:android:0d9da9402e9d1cb2508f32",
+        "android_client_info": {
+          "package_name": "com.example.nsysufood"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyALUIMD4WYQZ13qPymmwPFDDxDSm-MzM94"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

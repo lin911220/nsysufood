@@ -1,0 +1,25 @@
+# --- Android Studio / IntelliJ 通用設定 ---
+*.iml
+.gradle/
+.idea/
+.DS_Store
+/captures
+.externalNativeBuild
+.cxx
+
+# --- 建置檔案 (垃圾檔) ---
+# 忽略根目錄和所有子模組的 build 資料夾
+build/
+app/build/
+
+# --- 個人設定 (絕對不能上傳) ---
+local.properties
+
+# --- Firebase 設定檔 (資安最重要！★) ---
+# 這個檔案包含你的 API Key 和專案 ID，不建議公開
+# google-services.json
+
+# --- 安裝包 (不用上傳，別人下載程式碼自己編譯就好) ---
+*.apk
+*.aab
+*.ap_

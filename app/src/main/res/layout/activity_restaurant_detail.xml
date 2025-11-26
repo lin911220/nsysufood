@@ -42,6 +42,44 @@
                     android:textColor="#757575"
                     android:layout_marginTop="4dp"/>
 
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginTop="8dp">
+
+                    <RatingBar
+                        android:id="@+id/rbAverageRating"
+                        style="?android:attr/ratingBarStyleSmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:numStars="5"
+                        android:rating="0"
+                        android:isIndicator="true"
+                        android:stepSize="0.1"
+                        android:progressTint="#FFC107"/>
+
+                    <TextView
+                        android:id="@+id/tvAverageScore"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0.0"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="#333333"
+                        android:layout_marginStart="8dp"/>
+
+                    <TextView
+                        android:id="@+id/tvTotalReviews"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="(0)"
+                        android:textSize="14sp"
+                        android:textColor="#666666"
+                        android:layout_marginStart="4dp"/>
+                </LinearLayout>
+
                 <TextView
                     android:id="@+id/tvDetailStatus"
                     android:layout_width="wrap_content"

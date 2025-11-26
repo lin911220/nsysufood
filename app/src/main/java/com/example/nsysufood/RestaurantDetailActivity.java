@@ -1,9 +1,13 @@
 package com.example.nsysufood;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.RatingBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -28,17 +32,23 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class RestaurantDetailActivity extends AppCompatActivity {
 
     private TextView tvName, tvLocation, tvStatus, tvHours, tvStats;
+    // 新增：平均星數相關變數
+    private RatingBar rbAverageRating;
+    private TextView tvAverageScore, tvTotalReviews;
+
     private Button btnReportOpen, btnReportClosed;
     private Restaurant restaurant;
     private String todayDate;
 
-    // 評論相關變數
+    // 評論相關
     private RecyclerView rvReviews;
     private ReviewAdapter reviewAdapter;
     private List<Review> reviewList;
@@ -62,7 +72,6 @@ public class RestaurantDetailActivity extends AppCompatActivity {
         setupUI();
         setupButtons();
 
-        // 啟動監聽器
         loadReportStats();
         loadReviews();
     }
@@ -73,21 +82,160 @@ public class RestaurantDetailActivity extends AppCompatActivity {
         tvStatus = findViewById(R.id.tvDetailStatus);
         tvHours = findViewById(R.id.tvDetailHours);
         tvStats = findViewById(R.id.tvReportStats);
+
+        // 新增：綁定平均星數元件
+        rbAverageRating = findViewById(R.id.rbAverageRating);
+        tvAverageScore = findViewById(R.id.tvAverageScore);
+        tvTotalReviews = findViewById(R.id.tvTotalReviews);
+
         btnReportOpen = findViewById(R.id.btnReportOpen);
         btnReportClosed = findViewById(R.id.btnReportClosed);
 
-        // 評論區
         rvReviews = findViewById(R.id.rvReviews);
         btnAddReview = findViewById(R.id.btnAddReview);
         tvNoReviews = findViewById(R.id.tvNoReviews);
 
-        // 初始化評論列表
         rvReviews.setLayoutManager(new LinearLayoutManager(this));
         reviewList = new ArrayList<>();
         reviewAdapter = new ReviewAdapter(reviewList);
+
+        // 設定按鈕點擊監聽器 (編輯/刪除)
+        reviewAdapter.setOnReviewOptionClickListener(new ReviewAdapter.OnReviewOptionClickListener() {
+            @Override
+            public void onOptionClick(View view, Review review) {
+                showReviewOptionMenu(review);
+            }
+        });
+
         rvReviews.setAdapter(reviewAdapter);
     }
 
+    // --- 顯示選單 (編輯/刪除) ---
+    private void showReviewOptionMenu(Review review) {
+        String[] options = {"編輯評論", "刪除評論"};
+        new AlertDialog.Builder(this)
+                .setTitle("管理評論")
+                .setItems(options, (dialog, which) -> {
+                    if (which == 0) {
+                        showEditReviewDialog(review);
+                    } else if (which == 1) {
+                        confirmDeleteReview(review);
+                    }
+                })
+                .show();
+    }
+
+    // --- 編輯功能的 Dialog ---
+    private void showEditReviewDialog(Review review) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        View view = getLayoutInflater().inflate(R.layout.dialog_add_review, null);
+        builder.setView(view);
+
+        final EditText etComment = view.findViewById(R.id.etDialogComment);
+        final RatingBar rbDialogRating = view.findViewById(R.id.rbDialogRating);
+
+        etComment.setText(review.getComment());
+        rbDialogRating.setRating(review.getRating());
+
+        builder.setPositiveButton("更新", (dialog, which) -> {
+            String newComment = etComment.getText().toString();
+            float newRating = rbDialogRating.getRating();
+            if (newRating == 0) {
+                Toast.makeText(this, "請給分", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            updateReviewToFirebase(review.getReviewId(), newRating, newComment);
+        });
+        builder.setNegativeButton("取消", null);
+        builder.show();
+    }
+
+    // --- 更新 Firebase 資料 ---
+    private void updateReviewToFirebase(String reviewId, float rating, String comment) {
+        DatabaseReference ref = FirebaseDatabase.getInstance()
+                .getReference("reviews")
+                .child(restaurant.getId())
+                .child(reviewId);
+
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("comment", comment);
+        updates.put("rating", rating);
+
+        ref.updateChildren(updates).addOnSuccessListener(aVoid ->
+                Toast.makeText(this, "評論已更新", Toast.LENGTH_SHORT).show()
+        );
+    }
+
+    // --- 刪除功能的確認框 ---
+    private void confirmDeleteReview(Review review) {
+        new AlertDialog.Builder(this)
+                .setTitle("刪除確認")
+                .setMessage("確定要刪除這則評論嗎？")
+                .setPositiveButton("刪除", (dialog, which) -> deleteReviewFromFirebase(review.getReviewId()))
+                .setNegativeButton("取消", null)
+                .show();
+    }
+
+    private void deleteReviewFromFirebase(String reviewId) {
+        DatabaseReference reviewRef = FirebaseDatabase.getInstance()
+                .getReference("reviews")
+                .child(restaurant.getId())
+                .child(reviewId);
+
+        reviewRef.removeValue().addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                Toast.makeText(this, "評論已刪除", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "刪除失敗", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    // --- 載入評論並計算平均分 ---
+    private void loadReviews() {
+        DatabaseReference reviewsRef = FirebaseDatabase.getInstance().getReference("reviews").child(restaurant.getId());
+        reviewsRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                reviewList.clear();
+                float totalStars = 0; // 總星數
+                int count = 0;        // 評論數
+
+                for (DataSnapshot ds : snapshot.getChildren()) {
+                    Review review = ds.getValue(Review.class);
+                    if (review != null) {
+                        reviewList.add(review);
+                        totalStars += review.getRating();
+                        count++;
+                    }
+                }
+
+                // 計算平均 (避免除以 0)
+                float average = (count > 0) ? (totalStars / count) : 0;
+
+                // 更新 UI 上的平均分數
+                rbAverageRating.setRating(average);
+                tvAverageScore.setText(String.format(Locale.getDefault(), "%.1f", average));
+                tvTotalReviews.setText(String.format(Locale.getDefault(), "(%d 則評論)", count));
+
+                // 更新列表
+                Collections.reverse(reviewList);
+                reviewAdapter.updateList(reviewList);
+
+                if (reviewList.isEmpty()) {
+                    tvNoReviews.setVisibility(View.VISIBLE);
+                    rvReviews.setVisibility(View.GONE);
+                } else {
+                    tvNoReviews.setVisibility(View.GONE);
+                    rvReviews.setVisibility(View.VISIBLE);
+                }
+            }
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {}
+        });
+    }
+
+    // 以下是原有的 UI 與其他邏輯
     private void setupUI() {
         tvName.setText(restaurant.getName());
         tvLocation.setText(restaurant.getLocationName());
@@ -129,7 +277,6 @@ public class RestaurantDetailActivity extends AppCompatActivity {
         btnAddReview.setOnClickListener(v -> showAddReviewDialog());
     }
 
-    // --- 回報功能 ---
     private void submitReport(String status) {
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if (user == null) {
@@ -162,7 +309,6 @@ public class RestaurantDetailActivity extends AppCompatActivity {
         });
     }
 
-    // --- 評論功能 ---
     private void showAddReviewDialog() {
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if (user == null) {
@@ -174,12 +320,12 @@ public class RestaurantDetailActivity extends AppCompatActivity {
         View view = getLayoutInflater().inflate(R.layout.dialog_add_review, null);
         builder.setView(view);
 
-        final android.widget.EditText etComment = view.findViewById(R.id.etDialogComment);
-        final android.widget.RatingBar rbRating = view.findViewById(R.id.rbDialogRating);
+        final EditText etComment = view.findViewById(R.id.etDialogComment);
+        final RatingBar rbDialogRating = view.findViewById(R.id.rbDialogRating);
 
         builder.setPositiveButton("送出", (dialog, which) -> {
             String comment = etComment.getText().toString();
-            float rating = rbRating.getRating();
+            float rating = rbDialogRating.getRating();
             if (rating == 0) {
                 Toast.makeText(this, "請至少給一顆星", Toast.LENGTH_SHORT).show();
                 return;
@@ -199,31 +345,5 @@ public class RestaurantDetailActivity extends AppCompatActivity {
             reviewsRef.child(reviewId).setValue(newReview)
                     .addOnSuccessListener(aVoid -> Toast.makeText(this, "評論已送出", Toast.LENGTH_SHORT).show());
         }
-    }
-
-    private void loadReviews() {
-        DatabaseReference reviewsRef = FirebaseDatabase.getInstance().getReference("reviews").child(restaurant.getId());
-        reviewsRef.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                reviewList.clear();
-                for (DataSnapshot ds : snapshot.getChildren()) {
-                    Review review = ds.getValue(Review.class);
-                    if (review != null) reviewList.add(review);
-                }
-                Collections.reverse(reviewList);
-                reviewAdapter.updateList(reviewList);
-
-                if (reviewList.isEmpty()) {
-                    tvNoReviews.setVisibility(View.VISIBLE);
-                    rvReviews.setVisibility(View.GONE);
-                } else {
-                    tvNoReviews.setVisibility(View.GONE);
-                    rvReviews.setVisibility(View.VISIBLE);
-                }
-            }
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {}
-        });
     }
 }

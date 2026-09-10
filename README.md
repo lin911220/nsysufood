@@ -141,12 +141,3 @@ Firebase Realtime Database 主要分為三個節點：
 }
 ```
 
------
-
-## 📝 授權與開發者
-
-Developed by **[lin911220]**
-專案僅供學術交流與學習使用。
-
-```
-```
